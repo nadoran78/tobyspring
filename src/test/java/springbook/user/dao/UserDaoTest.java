@@ -4,11 +4,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.sql.SQLException;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.GenericXmlApplicationContext;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.datasource.SingleConnectionDataSource;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import springbook.user.domain.User;
 
 class UserDaoTest {
@@ -20,15 +25,17 @@ class UserDaoTest {
 
   @BeforeEach
   public void setUp() {
-    ApplicationContext context = new GenericXmlApplicationContext(
-        "applicationContext.xml");
 
-    this.dao = context.getBean("userDao", UserDao.class);
+    dao = new UserDao();
+    DataSource dataSource = new SingleConnectionDataSource("jdbc:mysql://localhost/testdb",
+        "root", "toby", true);
+    dao.setDataSource(dataSource);
 
     this.user1 = new User("test1", "홍길동1", "password1");
     this.user2 = new User("test2", "홍길동2", "password2");
     this.user3 = new User("test3", "홍길동3", "password3");
   }
+
   @Test
   public void addAndGet() throws SQLException {
 
