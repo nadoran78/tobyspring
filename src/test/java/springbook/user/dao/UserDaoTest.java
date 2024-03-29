@@ -1,43 +1,76 @@
 package springbook.user.dao;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.sql.SQLException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.GenericXmlApplicationContext;
+import org.springframework.dao.EmptyResultDataAccessException;
 import springbook.user.domain.User;
 
 class UserDaoTest {
 
-  @Test
-  public void addAndGet() throws SQLException {
+  private UserDao dao;
+  private User user1;
+  private User user2;
+  private User user3;
+
+  @BeforeEach
+  public void setUp() {
     ApplicationContext context = new GenericXmlApplicationContext(
         "applicationContext.xml");
 
-    UserDao dao = context.getBean("userDao", UserDao.class);
+    this.dao = context.getBean("userDao", UserDao.class);
 
-    User user = new User();
-    user.setId("test1");
-    user.setName("hello");
-    user.setPassword("lucky");
+    this.user1 = new User("test1", "홍길동1", "password1");
+    this.user2 = new User("test2", "홍길동2", "password2");
+    this.user3 = new User("test3", "홍길동3", "password3");
+  }
+  @Test
+  public void addAndGet() throws SQLException {
 
-    dao.add(user);
+    dao.deleteAll();
+    assertEquals(0, dao.getCount());
 
-    System.out.println(user.getId() + "  등록 성공");
+    dao.add(user1);
+    dao.add(user2);
+    assertEquals(2, dao.getCount());
 
-    User user2 = dao.get(user.getId());
+    User userGet1 = dao.get(user1.getId());
+    assertEquals(userGet1.getName(), user1.getName());
+    assertEquals(userGet1.getPassword(), user1.getPassword());
 
-    assertEquals(user2.getName(), user.getName());
-    assertEquals(user2.getPassword(), user.getPassword());
+    User userGet2 = dao.get(user2.getId());
+    assertEquals(userGet2.getName(), user2.getName());
+    assertEquals(userGet2.getPassword(), user2.getPassword());
 
-//    if (!user.getName().equals(user2.getName())) {
-//      System.out.println("테스트 실패 (name)");
-//    } else if (!user.getPassword().equals(user2.getPassword())) {
-//      System.out.println("테스트 실패 (password)");
-//    } else {
-//      System.out.println("조회 테스트 성공");
-//    }
   }
 
+  @Test
+  public void count() throws SQLException {
+
+    dao.deleteAll();
+    assertEquals(0, dao.getCount());
+
+    dao.add(user1);
+    assertEquals(1, dao.getCount());
+
+    dao.add(user2);
+    assertEquals(2, dao.getCount());
+
+    dao.add(user3);
+    assertEquals(3, dao.getCount());
+  }
+
+  @Test
+  public void getUserFailure() throws SQLException {
+
+    dao.deleteAll();
+    assertEquals(dao.getCount(), 0);
+
+    assertThrows(EmptyResultDataAccessException.class, () -> dao.get("unknown_id"));
+  }
 }
