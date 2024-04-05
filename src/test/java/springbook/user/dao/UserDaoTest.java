@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 import org.springframework.test.annotation.DirtiesContext;
@@ -16,8 +17,11 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import springbook.user.domain.User;
 
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration("/test-applicationContext.xml")
 class UserDaoTest {
 
+  @Autowired
   private UserDao dao;
   private User user1;
   private User user2;
@@ -25,11 +29,6 @@ class UserDaoTest {
 
   @BeforeEach
   public void setUp() {
-
-    dao = new UserDao();
-    DataSource dataSource = new SingleConnectionDataSource("jdbc:mysql://localhost/testdb",
-        "root", "toby", true);
-    dao.setDataSource(dataSource);
 
     this.user1 = new User("test1", "홍길동1", "password1");
     this.user2 = new User("test2", "홍길동2", "password2");
