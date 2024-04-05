@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.PrimitiveIterator;
 import javax.sql.DataSource;
 import org.springframework.dao.EmptyResultDataAccessException;
 import springbook.user.domain.User;
@@ -67,15 +68,7 @@ public class UserDao {
   }
 
   public void deleteAll() throws SQLException {
-    this.jdbcContext.workWithStatementStrategy(
-        new StatementStrategy() {
-          @Override
-          public PreparedStatement makePreparedStatement(Connection c)
-              throws SQLException {
-            return c.prepareStatement("delete from users");
-          }
-        }
-    );
+    this.jdbcContext.executeSql("delete from users");
   }
 
   public int getCount() throws SQLException {
