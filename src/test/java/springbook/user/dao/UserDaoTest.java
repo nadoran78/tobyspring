@@ -4,15 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.sql.SQLException;
-import javax.sql.DataSource;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.datasource.SingleConnectionDataSource;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import springbook.user.domain.User;
@@ -30,9 +27,9 @@ class UserDaoTest {
   @BeforeEach
   public void setUp() {
 
-    this.user1 = new User("test1", "홍길동1", "password1");
-    this.user2 = new User("test2", "홍길동2", "password2");
-    this.user3 = new User("test3", "홍길동3", "password3");
+    this.user1 = new User("test2", "홍길동1", "password1");
+    this.user2 = new User("test3", "홍길동2", "password2");
+    this.user3 = new User("test1", "홍길동3", "password3");
   }
 
   @Test
@@ -78,5 +75,38 @@ class UserDaoTest {
     assertEquals(dao.getCount(), 0);
 
     assertThrows(EmptyResultDataAccessException.class, () -> dao.get("unknown_id"));
+  }
+
+  @Test
+  public void getAll() throws SQLException {
+    dao.deleteAll();
+
+    List<User> users0 = dao.getAll();
+    assertEquals(users0.size(), 0);
+
+    dao.add(user1); // Id : test2
+    List<User> users1 = dao.getAll();
+    assertEquals(users1.size(), 1);
+    checkSameUser(user1, users1.get(0));
+
+    dao.add(user2); // Id : test3
+    List<User> users2 = dao.getAll();
+    assertEquals(users2.size(), 2);
+    checkSameUser(user1, users2.get(0));
+    checkSameUser(user2, users2.get(1));
+
+    dao.add(user3); // Id: test1
+    List<User> users3 = dao.getAll();
+    assertEquals(users3.size(), 3);
+    checkSameUser(user3, users3.get(0));
+    checkSameUser(user1, users3.get(1));
+    checkSameUser(user2, users3.get(2));
+
+  }
+
+  private void checkSameUser(User user1, User user2) {
+    assertEquals(user1.getId(), user2.getId());
+    assertEquals(user1.getName(), user2.getName());
+    assertEquals(user1.getPassword(), user2.getPassword());
   }
 }
