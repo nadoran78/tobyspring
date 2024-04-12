@@ -1,0 +1,89 @@
+package springbook.user.service;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static springbook.user.service.UserService.MIN_LOGCOUNT_FOR_SILVER;
+import static springbook.user.service.UserService.MIN_RECOMMEND_FOR_GOLD;
+
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import springbook.user.dao.UserDao;
+import springbook.user.domain.Level;
+import springbook.user.domain.User;
+
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(locations = "/test-applicationContext.xml")
+class UserServiceTest {
+
+  @Autowired
+  UserDao userDao;
+
+  @Autowired
+  UserService userService;
+
+  List<User> users;
+
+  @BeforeEach
+  public void setUp() {
+    users = List.of(
+        new User("jungchang", "이정창", "p1", Level.BASIC, MIN_LOGCOUNT_FOR_SILVER - 1, 0),
+        new User("jiyeong", "권지영", "p2", Level.BASIC, MIN_LOGCOUNT_FOR_SILVER, 0),
+        new User("chulgyu", "이철규", "p3", Level.SILVER, 60, MIN_RECOMMEND_FOR_GOLD - 1),
+        new User("cha", "차부장", "p4", Level.SILVER, 60, MIN_RECOMMEND_FOR_GOLD),
+        new User("sunhan", "이선한", "p5", Level.GOLD, 100, Integer.MAX_VALUE)
+    );
+
+  }
+
+  @Test
+  public void upgradeLevels() {
+    userDao.deleteAll();
+    for (User user : users) {
+      userDao.add(user);
+    }
+
+    userService.upgradeLevels();
+
+    checkLevelUpgraded(users.get(0), false);
+    checkLevelUpgraded(users.get(1), true);
+    checkLevelUpgraded(users.get(2), false);
+    checkLevelUpgraded(users.get(3), true);
+    checkLevelUpgraded(users.get(4), false);
+  }
+
+  private void checkLevelUpgraded(User user, boolean upgraded) {
+    User userUpdate = userDao.get(user.getId());
+    if (upgraded) {
+      assertEquals(userUpdate.getLevel(), user.getLevel().nextLevel());
+    } else {
+      assertEquals(userUpdate.getLevel(), user.getLevel());
+    }
+  }
+
+  private void checkLevel(User user, Level expectedLevel) {
+    User userUpdate = userDao.get(user.getId());
+    assertEquals(userUpdate.getLevel(), expectedLevel);
+  }
+
+  @Test
+  public void add() {
+    userDao.deleteAll();
+
+    User userWithLevel = users.get(4);
+    User userWithoutLevel = users.get(0);
+    userWithoutLevel.setLevel(null);
+
+    userService.add(userWithLevel);
+    userService.add(userWithoutLevel);
+
+    User userWithLevelRead = userDao.get(userWithLevel.getId());
+    User userWithoutLevelRead = userDao.get(userWithoutLevel.getId());
+
+    assertEquals(userWithLevelRead.getLevel(), userWithLevel.getLevel());
+    assertEquals(userWithoutLevelRead.getLevel(), userWithoutLevel.getLevel());
+  }
+}
