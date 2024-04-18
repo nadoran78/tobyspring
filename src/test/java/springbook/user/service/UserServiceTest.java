@@ -1,16 +1,19 @@
 package springbook.user.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static springbook.user.service.UserService.MIN_LOGCOUNT_FOR_SILVER;
 import static springbook.user.service.UserService.MIN_RECOMMEND_FOR_GOLD;
 
 import java.util.List;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.transaction.PlatformTransactionManager;
 import springbook.user.dao.UserDao;
 import springbook.user.domain.Level;
 import springbook.user.domain.User;
@@ -24,6 +27,9 @@ class UserServiceTest {
 
   @Autowired
   UserService userService;
+
+  @Autowired
+  PlatformTransactionManager transactionManager;
 
   List<User> users;
 
@@ -40,7 +46,7 @@ class UserServiceTest {
   }
 
   @Test
-  public void upgradeLevels() {
+  public void upgradeLevels() throws Exception {
     userDao.deleteAll();
     for (User user : users) {
       userDao.add(user);
@@ -85,5 +91,42 @@ class UserServiceTest {
 
     assertEquals(userWithLevelRead.getLevel(), userWithLevel.getLevel());
     assertEquals(userWithoutLevelRead.getLevel(), userWithoutLevel.getLevel());
+  }
+
+  @Test
+  public void upgradeAllOrNothing() throws Exception {
+    UserService testUserService = new TestUserService(users.get(3).getId());
+    testUserService.setUserDao(this.userDao);
+    testUserService.setTransactionManager(transactionManager);
+    userDao.deleteAll();
+    for(User user : users) userDao.add(user);
+
+    try {
+      testUserService.upgradeLevels();
+      fail("TestUserServiceException expected");
+    }
+    catch (TestUserServiceException e) {
+      System.out.println("error 발생");
+    }
+
+    checkLevelUpgraded(users.get(1), false);
+  }
+
+  static class TestUserService extends UserService {
+    private String id;
+
+    private TestUserService(String id) {
+      this.id = id;
+    }
+
+    @Override
+    protected void upgradeLevel(User user) {
+      if (user.getId().equals(this.id)) throw new TestUserServiceException();
+      super.upgradeLevel(user);
+    }
+  }
+
+  static class TestUserServiceException extends RuntimeException {
+
   }
 }
