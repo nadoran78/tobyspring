@@ -1,14 +1,21 @@
 package springbook.user.service;
 
-import java.sql.Connection;
+import jakarta.mail.Message.RecipientType;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
-import javax.sql.DataSource;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.jdbc.datasource.DataSourceUtils;
+import java.util.Properties;
+import org.springframework.mail.MailSender;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import springbook.user.dao.UserDao;
 import springbook.user.domain.Level;
 import springbook.user.domain.User;
@@ -20,6 +27,12 @@ public class UserService {
   public static final int MIN_RECOMMEND_FOR_GOLD = 30;
 
   private PlatformTransactionManager transactionManager;
+
+  private MailSender mailSender;
+
+  public void setMailSender(MailSender mailSender) {
+    this.mailSender = mailSender;
+  }
 
   public void setTransactionManager(PlatformTransactionManager transactionManager) {
     this.transactionManager = transactionManager;
@@ -65,6 +78,17 @@ public class UserService {
   protected void upgradeLevel(User user) {
     user.upgradeLevel();
     userDao.update(user);
+    sendUpgradeEMail(user);
+  }
+
+  private void sendUpgradeEMail(User user) {
+    SimpleMailMessage mailMessage = new SimpleMailMessage();
+    mailMessage.setTo(user.getEmail());
+    mailMessage.setFrom("useradmin@ksug.org");
+    mailMessage.setSubject("Upgrade 안내");
+    mailMessage.setText("사용자 님의 등급이 " + user.getLevel().name());
+
+    this.mailSender.send(mailMessage);
   }
 
   public void add(User user) {

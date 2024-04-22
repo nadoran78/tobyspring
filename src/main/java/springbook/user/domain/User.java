@@ -8,6 +8,8 @@ public class User {
   String name;
   String password;
 
+  String email;
+
   public String getId() {
     return id;
   }
@@ -42,6 +44,8 @@ public class User {
   public int getRecommend() { return recommend; }
 
   public void setRecommend(int recommend) { this.recommend = recommend; }
+
+  public String getEmail() { return email; }
 
   public User(String id, String name, String password, Level level, int login, int recommend) {
     this.id = id;
