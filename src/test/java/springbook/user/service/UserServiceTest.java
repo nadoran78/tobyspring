@@ -2,6 +2,11 @@ package springbook.user.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static springbook.user.service.UserServiceImpl.MIN_LOGCOUNT_FOR_SILVER;
 import static springbook.user.service.UserServiceImpl.MIN_RECOMMEND_FOR_GOLD;
 
@@ -10,6 +15,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.mail.MailSender;
@@ -56,28 +62,61 @@ class UserServiceTest {
   }
 
   @Test
+  public void mockUpgradeLevels() throws Exception {
+    UserServiceImpl userServiceImpl = new UserServiceImpl();
+
+    UserDao mockUserDao = mock(UserDao.class);
+    when(mockUserDao.getAll()).thenReturn(this.users);
+    userServiceImpl.setUserDao(mockUserDao);
+
+    MailSender mockMailSender = mock(MailSender.class);
+    userServiceImpl.setMailSender(mockMailSender);
+
+    userServiceImpl.upgradeLevels();
+
+    verify(mockUserDao, times(2)).update(any(User.class));
+    verify(mockUserDao, times(2)).update(any(User.class));
+    verify(mockUserDao).update(users.get(1));
+    assertEquals(users.get(1).getLevel(), Level.SILVER);
+    verify(mockUserDao).update(users.get(3));
+    assertEquals(users.get(3).getLevel(), Level.GOLD);
+
+    ArgumentCaptor<SimpleMailMessage> mailMessageArg =
+        ArgumentCaptor.forClass(SimpleMailMessage.class);
+    verify(mockMailSender, times(2)).send(mailMessageArg.capture());
+    List<SimpleMailMessage> mailMessages = mailMessageArg.getAllValues();
+    assertEquals(mailMessages.get(0).getTo()[0], users.get(1).getEmail());
+    assertEquals(mailMessages.get(1).getTo()[0], users.get(3).getEmail());
+  }
+
+  @Test
   @DirtiesContext
   public void upgradeLevels() throws Exception {
-    userDao.deleteAll();
-    for (User user : users) {
-      userDao.add(user);
-    }
+    UserServiceImpl userServiceImpl = new UserServiceImpl();
+
+    MockUserDao mockUserDao = new MockUserDao(this.users);
+    userServiceImpl.setUserDao(mockUserDao);
 
     MockMailSender mockMailSender = new MockMailSender();
     userServiceImpl.setMailSender(mockMailSender);
 
-    userService.upgradeLevels();
+    userServiceImpl.upgradeLevels();
 
-    checkLevelUpgraded(users.get(0), false);
-    checkLevelUpgraded(users.get(1), true);
-    checkLevelUpgraded(users.get(2), false);
-    checkLevelUpgraded(users.get(3), true);
-    checkLevelUpgraded(users.get(4), false);
+    List<User> updated = mockUserDao.getUpdated();
+    assertEquals(updated.size(), 2);
+    checkUserAndLevel(updated.get(0), "jiyeong", Level.SILVER);
+    checkUserAndLevel(updated.get(1), "cha", Level.GOLD);
+
 
     List<String> request = mockMailSender.getRequests();
     assertEquals(request.size(), 2);
     assertEquals(request.get(0), users.get(1).getEmail());
     assertEquals(request.get(1), users.get(3).getEmail());
+  }
+
+  private void checkUserAndLevel(User updated, String expectedId, Level expectedLevel) {
+    assertEquals(updated.getId(), expectedId);
+    assertEquals(updated.getLevel(), expectedLevel);
   }
 
   private void checkLevelUpgraded(User user, boolean upgraded) {
@@ -168,5 +207,31 @@ class UserServiceTest {
     public void send(SimpleMailMessage[] mailMessage) throws MailException {
 
     }
+  }
+
+  static class MockUserDao implements UserDao {
+    private List<User> users;
+    private List<User> updated = new ArrayList<>();
+
+    private MockUserDao(List<User> users) {
+      this.users = users;
+    }
+
+    public List<User> getUpdated() {
+      return this.updated;
+    }
+
+    public List<User> getAll() {
+      return this.users;
+    }
+
+    public void update(User user) {
+      updated.add(user);
+    }
+
+    public void add(User user) {throw new UnsupportedOperationException();}
+    public void deleteAll() {throw new UnsupportedOperationException();}
+    public User get(String id) {throw new UnsupportedOperationException();}
+    public int getCount() {throw new UnsupportedOperationException();}
   }
 }
