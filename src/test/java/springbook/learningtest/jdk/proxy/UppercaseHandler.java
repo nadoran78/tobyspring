@@ -1,4 +1,4 @@
-package springbook.proxy;
+package springbook.learningtest.jdk.proxy;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -7,7 +7,7 @@ public class UppercaseHandler implements InvocationHandler {
 
   Object target;
 
-  private UppercaseHandler(Object target) {
+  public UppercaseHandler(Object target) {
     this.target = target;
   }
 

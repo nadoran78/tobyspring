@@ -1,6 +1,8 @@
-package springbook.proxy;
+package springbook.learningtest.jdk.proxy;
 
-public class HelloUppercase implements Hello{
+import springbook.learningtest.jdk.proxy.DynamicProxyTest.Hello;
+
+public class HelloUppercase implements Hello {
 
   Hello hello;
   public HelloUppercase(Hello hello) {
