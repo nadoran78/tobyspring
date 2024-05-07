@@ -27,15 +27,20 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 import springbook.user.dao.UserDao;
 import springbook.user.domain.Level;
 import springbook.user.domain.User;
 
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(locations = "/test-applicationContext.xml")
+@Rollback(value = false)
 class UserServiceTest {
 
   @Autowired
@@ -142,6 +147,7 @@ class UserServiceTest {
   }
 
   @Test
+  @Rollback
   public void add() {
     userDao.deleteAll();
 
@@ -184,6 +190,15 @@ class UserServiceTest {
   @Test
   public void readOnlyTransactionAttribute() {
     assertThrows(TransientDataAccessResourceException.class, () -> testUserService.getAll());
+  }
+
+  @Test
+  @Transactional
+  @Rollback(value = false)
+  public void transactionSync() {
+    userService.deleteAll();
+    userService.add(users.get(0));
+    userService.add(users.get(1));
   }
 
   static class TestUserService extends UserServiceImpl {
