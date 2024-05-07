@@ -1,6 +1,9 @@
 package springbook.user.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -10,14 +13,12 @@ import static org.mockito.Mockito.when;
 import static springbook.user.service.UserServiceImpl.MIN_LOGCOUNT_FOR_SILVER;
 import static springbook.user.service.UserServiceImpl.MIN_RECOMMEND_FOR_GOLD;
 
-import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.mail.MailException;
@@ -30,7 +31,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import springbook.user.dao.UserDao;
 import springbook.user.domain.Level;
 import springbook.user.domain.User;
-import springbook.user.handler.TransactionHandler;
 
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(locations = "/test-applicationContext.xml")
@@ -46,7 +46,7 @@ class UserServiceTest {
   UserService userService;
 
   @Autowired
-  UserServiceImpl userServiceImpl;
+  UserService testUserService;
 
   @Autowired
   PlatformTransactionManager transactionManager;
@@ -158,24 +158,14 @@ class UserServiceTest {
   }
 
   @Test
-  @DirtiesContext
   public void upgradeAllOrNothing() throws Exception {
-    TestUserService testUserService = new TestUserService(users.get(3).getId());
-    testUserService.setUserDao(this.userDao);
-    testUserService.setMailSender(mailSender);
-
-    ProxyFactoryBean txProxyFactoryBean = context.getBean("&userService",
-        ProxyFactoryBean.class);
-    txProxyFactoryBean.setTarget(testUserService);
-    UserService txUserService = (UserService) txProxyFactoryBean.getObject();
-
     userDao.deleteAll();
     for (User user : users) {
       userDao.add(user);
     }
 
     try {
-      txUserService.upgradeLevels();
+      this.testUserService.upgradeLevels();
       fail("TestUserServiceException expected");
     } catch (TestUserServiceException e) {
       System.out.println("error 발생");
@@ -184,13 +174,14 @@ class UserServiceTest {
     checkLevelUpgraded(users.get(1), false);
   }
 
+  @Test
+  public void advisorAutoProxyCreator() {
+    assertTrue(testUserService instanceof java.lang.reflect.Proxy);
+  }
+
   static class TestUserService extends UserServiceImpl {
 
-    private String id;
-
-    private TestUserService(String id) {
-      this.id = id;
-    }
+    private String id = "cha";
 
     @Override
     protected void upgradeLevel(User user) {
