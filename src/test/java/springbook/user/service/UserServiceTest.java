@@ -3,6 +3,7 @@ package springbook.user.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.dao.TransientDataAccessResourceException;
 import org.springframework.mail.MailException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
@@ -179,6 +181,11 @@ class UserServiceTest {
     assertTrue(testUserService instanceof java.lang.reflect.Proxy);
   }
 
+  @Test
+  public void readOnlyTransactionAttribute() {
+    assertThrows(TransientDataAccessResourceException.class, () -> testUserService.getAll());
+  }
+
   static class TestUserService extends UserServiceImpl {
 
     private String id = "cha";
@@ -189,6 +196,13 @@ class UserServiceTest {
         throw new TestUserServiceException();
       }
       super.upgradeLevel(user);
+    }
+
+    public List<User> getAll() {
+      for (User user : super.getAll()) {
+        super.update(user);
+      }
+      return null;
     }
   }
 
