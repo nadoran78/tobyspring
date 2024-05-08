@@ -7,7 +7,6 @@ public class User {
   String id;
   String name;
   String password;
-
   String email;
 
   public String getId() {
