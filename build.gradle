@@ -24,6 +24,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-aop'
     implementation 'org.glassfish.jaxb:jaxb-runtime'
     implementation 'org.springframework:spring-oxm'
+    implementation 'org.hsqldb:hsqldb'
 }
 
 tasks.named('test') {
