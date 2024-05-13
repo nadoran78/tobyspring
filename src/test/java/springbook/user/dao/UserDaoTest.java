@@ -11,19 +11,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.support.SQLErrorCodeSQLExceptionTranslator;
 import org.springframework.jdbc.support.SQLExceptionTranslator;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import springbook.user.config.AppContext;
 import springbook.user.domain.Level;
 import springbook.user.domain.User;
 
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration("/test-applicationContext.xml")
+@ContextConfiguration(classes = {AppContext.class})
 class UserDaoTest {
 
+  @Qualifier("userDaoJdbc")
   @Autowired
   private UserDao dao;
 

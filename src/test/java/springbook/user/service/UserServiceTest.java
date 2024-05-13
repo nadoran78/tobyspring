@@ -1,5 +1,6 @@
 package springbook.user.service;
 
+import static net.bytebuddy.matcher.ElementMatchers.is;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -14,6 +15,7 @@ import static org.mockito.Mockito.when;
 import static springbook.user.service.UserServiceImpl.MIN_LOGCOUNT_FOR_SILVER;
 import static springbook.user.service.UserServiceImpl.MIN_RECOMMEND_FOR_GOLD;
 
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.TransientDataAccessResourceException;
 import org.springframework.mail.MailException;
@@ -28,20 +31,21 @@ import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.Rollback;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
+import springbook.user.config.AppContext;
 import springbook.user.dao.UserDao;
 import springbook.user.domain.Level;
 import springbook.user.domain.User;
 
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(locations = "/test-applicationContext.xml")
+@ActiveProfiles("test")
+@ContextConfiguration(classes = {AppContext.class})
 @Rollback(value = false)
-class UserServiceTest {
+public class UserServiceTest {
 
   @Autowired
   ApplicationContext context;
@@ -60,6 +64,9 @@ class UserServiceTest {
 
   @Autowired
   MailSender mailSender;
+
+  @Autowired
+  DefaultListableBeanFactory bf;
 
   List<User> users;
 
@@ -184,7 +191,7 @@ class UserServiceTest {
 
   @Test
   public void advisorAutoProxyCreator() {
-    assertTrue(testUserService instanceof java.lang.reflect.Proxy);
+    assertTrue(testUserService instanceof Proxy);
   }
 
   @Test
@@ -201,7 +208,14 @@ class UserServiceTest {
     userService.add(users.get(1));
   }
 
-  static class TestUserService extends UserServiceImpl {
+  @Test
+  public void beans() {
+    for (String n : bf.getBeanDefinitionNames()) {
+      System.out.println(n + " \t" + bf.getBean(n).getClass().getName());
+    }
+  }
+
+  public static class TestUserService extends UserServiceImpl {
 
     private String id = "cha";
 
